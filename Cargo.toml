@@ -7,6 +7,7 @@ edition = "2021"
 
 [dependencies]
 async-trait = "0.1.79"
+axum = "0.7.5"
 dotenv = "0.15.0"
 env_logger = "0.11.3"
 log = "0.4.21"
@@ -20,6 +21,7 @@ serde_json = "1.0.114"
 task-local-extensions = "0.1.4"
 thiserror = "1.0.58"
 tokio = { version = "1.36.0", features = ["full"] }
+tracing-subscriber = "0.3.18"
 url = "2.5.0"
 
 [dev-dependencies]
