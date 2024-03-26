@@ -1,4 +1,4 @@
-mod image;
+pub mod image;
 mod login;
 mod tracing;
 

@@ -1,3 +1,5 @@
+use log::info;
+use prometheus_client::encoding::EncodeLabelSet;
 use serde::Deserialize;
 
 use super::{CephRestfulClient, CephRestfulClientError};
@@ -5,14 +7,14 @@ use super::{CephRestfulClient, CephRestfulClientError};
 #[derive(Clone, Debug, Deserialize)]
 #[allow(unused)]
 pub struct ImageInfo {
-    size: u64,
-    obj_size: u64,
-    num_objs: u64,
-    name: String,
-    id: String,
-    pool_name: String,
-    total_disk_usage: u64,
-    disk_usage: u64,
+    pub size: u64,
+    pub obj_size: u64,
+    pub num_objs: u64,
+    pub name: String,
+    pub id: String,
+    pub pool_name: String,
+    pub total_disk_usage: u64,
+    pub disk_usage: u64,
 }
 
 #[derive(Clone, Debug, Deserialize)]
@@ -22,13 +24,40 @@ pub struct ImagesInPoolInfo {
     value: Vec<ImageInfo>,
 }
 
+#[derive(Clone, Debug, Hash, PartialEq, Eq, EncodeLabelSet)]
+pub struct ImageMetadata {
+    pub name: String,
+    pub id: String,
+    pub pool_name: String,
+}
+
+impl From<ImageInfo> for ImageMetadata {
+    fn from(info: ImageInfo) -> Self {
+        Self {
+            name: info.name,
+            id: info.id,
+            pool_name: info.pool_name,
+        }
+    }
+}
 impl CephRestfulClient {
     pub async fn list_images(&self) -> Result<Vec<ImageInfo>, CephRestfulClientError> {
-        let response = self
-            .client
-            .get(self.endpoint("/api/block/image")?)
-            .send()
-            .await?;
+        // Firstly fetch the images with 1 limit to get the total count.
+        let mut ep = self.endpoint("/api/block/image")?;
+        ep.query_pairs_mut().append_pair("limit", "1");
+        let response = self.client.get(ep).send().await?;
+        let count = response
+            .headers()
+            .get("X-Total-Count")
+            .unwrap()
+            .to_str()
+            .unwrap();
+        info!("Fetching {} images...", count);
+
+        // Fetch all images with the total count.
+        let mut ep = self.endpoint("/api/block/image")?;
+        ep.query_pairs_mut().append_pair("limit", count);
+        let response = self.client.get(ep).send().await?;
         let images: Vec<ImagesInPoolInfo> = response.json().await?;
         Ok(images.into_iter().flat_map(|f| f.value).collect())
     }
