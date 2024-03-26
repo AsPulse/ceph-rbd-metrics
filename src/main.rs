@@ -9,6 +9,10 @@ use axum::routing::get;
 use axum::{Extension, Router};
 use dotenv::dotenv;
 use log::info;
+use prometheus_client::encoding::text::encode;
+use prometheus_client::metrics::family::Family;
+use prometheus_client::metrics::gauge::Gauge;
+use prometheus_client::registry::Registry;
 use tokio::net::TcpListener;
 mod ceph;
 
@@ -43,16 +47,29 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
 async fn metrics_handler(Extension(client): Extension<Arc<CephClient>>) -> (StatusCode, String) {
     info!("Requesting metrics...");
+    let mut registry = <Registry>::default();
+    let up = Family::<(), Gauge>::default();
+    registry.register(
+        "ceph_rbd_up",
+        "Value is 1 if the ceph mgr providing api endpoint is up, 0 otherwise",
+        up.clone(),
+    );
     let Ok(images) = client.client.list_images().await else {
-        return (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            "ceph_rbd_up 0".to_string(),
-        );
+        up.get_or_create(&()).set(0);
+        let mut buffer = String::new();
+        if encode(&mut buffer, &registry).is_err() {
+            return (StatusCode::INTERNAL_SERVER_ERROR, String::new());
+        }
+        return (StatusCode::INTERNAL_SERVER_ERROR, buffer);
     };
-    let text = String::from("ceph_rbd_up 1");
-
-    (StatusCode::OK, text)
+    up.get_or_create(&()).set(1);
+    let mut buffer = String::new();
+    if encode(&mut buffer, &registry).is_err() {
+        return (StatusCode::INTERNAL_SERVER_ERROR, String::new());
+    }
+    (StatusCode::OK, buffer)
 }
+
 async fn landing() -> (StatusCode, Html<&'static str>) {
     (StatusCode::OK, Html(include_str!("./index.html")))
 }

@@ -13,6 +13,7 @@ env_logger = "0.11.3"
 log = "0.4.21"
 once_cell = "1.19.0"
 pretty_assertions = "1.4.0"
+prometheus-client = "0.22.2"
 reqwest = { version = "0.11.26", features = ["json"] }
 reqwest-middleware = "0.2.5"
 reqwest-retry = "0.4.0"
