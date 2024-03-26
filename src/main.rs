@@ -32,6 +32,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let app = Router::new()
         .route("/", get(landing))
         .route("/metrics", get(metrics_handler))
+        .route("/healthz", get(|| async { "OK" }))
         .layer(Extension(Arc::new(CephClient::new().await)));
     let port = get_port_in_env().unwrap_or(3000);
     let listener = TcpListener::bind((Ipv4Addr::UNSPECIFIED, port))
