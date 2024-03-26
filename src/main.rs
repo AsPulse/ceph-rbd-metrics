@@ -43,7 +43,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
 async fn metrics_handler(Extension(client): Extension<Arc<CephClient>>) -> (StatusCode, String) {
     info!("Requesting metrics...");
-    let text = todo!();
+    let Ok(images) = client.client.list_images().await else {
+        return (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            "ceph_rbd_up 0".to_string(),
+        );
+    };
+    let text = String::from("ceph_rbd_up 1");
 
     (StatusCode::OK, text)
 }

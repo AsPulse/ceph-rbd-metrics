@@ -11,7 +11,7 @@ use serde_json::json;
 use tokio::sync::Mutex;
 
 use super::tracing::TracingMiddleware;
-use super::{CephRestfulClientAccess, CephRestfulClientError, ACCEPT_V1, USER_AGENT};
+use super::{CephRestfulClientAccess, ACCEPT_V1, USER_AGENT};
 
 pub struct CephApiAuthentication {
     access: CephRestfulClientAccess,
@@ -24,11 +24,20 @@ impl CephApiAuthentication {
             access,
             token: Arc::new(Mutex::new(None)),
         };
-        auth.refresh_token().await.unwrap();
+        let _ = auth.refresh_token().await;
         auth
     }
 
-    async fn refresh_token(&self) -> Result<(), CephRestfulClientError> {
+    async fn refresh_token(&self) -> reqwest_middleware::Result<()> {
+        let token = self.fetch_token().await;
+        if token.is_err() {
+            warn!("Failed to refresh the authentication token.");
+            self.token.lock().await.take();
+        }
+        token
+    }
+
+    async fn fetch_token(&self) -> reqwest_middleware::Result<()> {
         let retry_policy = ExponentialBackoff::builder().build_with_max_retries(3);
         let client = ClientBuilder::new(
             reqwest::Client::builder()
@@ -53,7 +62,7 @@ impl CephApiAuthentication {
         });
 
         let response = client
-            .post(self.access.host.join("/api/auth")?)
+            .post(self.access.host.join("/api/auth").unwrap())
             .json(&body)
             .send()
             .await?;
@@ -69,7 +78,14 @@ impl CephApiAuthentication {
                 Ok(())
             }
             StatusCode::BAD_REQUEST | StatusCode::UNAUTHORIZED => {
-                panic!("Failed to login.\n {:?}.", response.text().await);
+                panic!(
+                    "Failed to login, given credential is wrong.\n {:?}.",
+                    response.text().await
+                );
+            }
+            StatusCode::INTERNAL_SERVER_ERROR => {
+                warn!("Failed to login, the server is not available.");
+                Ok(())
             }
             _ => panic!("Unexpected response: {:?}", response),
         }
@@ -84,24 +100,24 @@ impl Middleware for CephApiAuthentication {
         extensions: &mut task_local_extensions::Extensions,
         next: reqwest_middleware::Next<'_>,
     ) -> reqwest_middleware::Result<Response> {
-        req.headers_mut().insert(
-            AUTHORIZATION,
-            format!("Bearer {}", self.token.lock().await.as_ref().unwrap())
-                .parse()
-                .unwrap(),
-        );
-        let cloned_req = req
-            .try_clone()
-            .expect("The request that can not be cloned is not supported.");
-        let res = next.clone().run(cloned_req, extensions).await?;
-        let status = res.status();
-        if !(status == StatusCode::UNAUTHORIZED || status == StatusCode::FORBIDDEN) {
-            return Ok(res);
-        }
+        if let Some(token) = self.token.lock().await.as_ref() {
+            req.headers_mut()
+                .insert(AUTHORIZATION, format!("Bearer {}", token).parse().unwrap());
+            let cloned_req = req
+                .try_clone()
+                .expect("The request that can not be cloned is not supported.");
+            let res = next.clone().run(cloned_req, extensions).await?;
+            let status = res.status();
+            if !(status == StatusCode::UNAUTHORIZED || status == StatusCode::FORBIDDEN) {
+                return Ok(res);
+            }
 
-        warn!("The request to Ceph API Server was rejected due to Authorization.");
+            warn!("The request to Ceph API Server was rejected due to Authorization.");
+        } else {
+            warn!("The authentication token is not present.");
+        }
         info!("Refreshing the authentication token...");
-        self.refresh_token().await.unwrap();
+        self.refresh_token().await?;
         req.headers_mut().insert(
             AUTHORIZATION,
             format!("Bearer {}", self.token.lock().await.as_ref().unwrap())
