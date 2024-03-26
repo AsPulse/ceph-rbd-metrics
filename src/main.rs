@@ -4,6 +4,7 @@ use std::sync::Arc;
 
 use self::ceph::CephRestfulClient;
 use axum::http::StatusCode;
+use axum::response::Html;
 use axum::routing::get;
 use axum::{Extension, Router};
 use dotenv::dotenv;
@@ -28,6 +29,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     tracing_subscriber::fmt::init();
 
     let app = Router::new()
+        .route("/", get(landing))
         .route("/metrics", get(metrics_handler))
         .layer(Extension(Arc::new(CephClient::new().await)));
     let port = get_port_in_env().unwrap_or(3000);
@@ -44,6 +46,9 @@ async fn metrics_handler(Extension(client): Extension<Arc<CephClient>>) -> (Stat
     let text = todo!();
 
     (StatusCode::OK, text)
+}
+async fn landing() -> (StatusCode, Html<&'static str>) {
+    (StatusCode::OK, Html(include_str!("./index.html")))
 }
 
 fn get_port_in_env() -> Option<u16> {
