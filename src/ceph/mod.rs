@@ -1,5 +1,7 @@
 mod login;
 
+use std::env;
+
 use log::info;
 use reqwest::header::HeaderValue;
 use reqwest::{header, Url};
@@ -9,6 +11,9 @@ use reqwest_retry::RetryTransientMiddleware;
 use reqwest_tracing::TracingMiddleware;
 use thiserror::Error;
 
+use crate::ceph::login::CephApiAuthentication;
+
+#[derive(Clone)]
 pub struct CephRestfulClientAccess {
     pub host: Url,
     pub username: String,
@@ -18,7 +23,6 @@ pub struct CephRestfulClientAccess {
 pub struct CephRestfulClient {
     client: ClientWithMiddleware,
     access: CephRestfulClientAccess,
-    token: Option<String>,
 }
 
 #[derive(Debug, Error)]
@@ -34,7 +38,17 @@ static USER_AGENT: &str = concat!("ceph-rbd-metrics/v", env!("CARGO_PKG_VERSION"
 static ACCEPT: &str = "application/vnd.ceph.api.v1.0+json";
 
 impl CephRestfulClient {
-    pub fn new(access: CephRestfulClientAccess) -> Self {
+    pub async fn from_env() -> Self {
+        let access = CephRestfulClientAccess {
+            host: Url::parse(&env::var("CEPH_API_ENDPOINT").expect("CEPH_API_ENDPOINT is not set"))
+                .expect("CEPH_API_ENDPOINT is not a valid URL"),
+            username: env::var("CEPH_API_USERNAME").expect("CEPH_API_USERNAME is not set"),
+            password: env::var("CEPH_API_PASSWORD").expect("CEPH_API_PASSWORD is not set"),
+        };
+        Self::new(access).await
+    }
+
+    pub async fn new(access: CephRestfulClientAccess) -> Self {
         let retry_policy = ExponentialBackoff::builder().build_with_max_retries(3);
 
         info!("Creating CephRestfulClient...");
@@ -57,37 +71,15 @@ impl CephRestfulClient {
                     .build()
                     .unwrap(),
             )
+            .with(CephApiAuthentication::new(access.clone()).await)
             .with(TracingMiddleware::default())
             .with(RetryTransientMiddleware::new_with_policy(retry_policy))
             .build(),
             access,
-            token: None,
         }
     }
 
     fn endpoint(&self, path: &str) -> Result<Url, url::ParseError> {
         self.access.host.join(path)
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use pretty_assertions::assert_eq;
-
-    #[test]
-    fn test_endpoint() {
-        let access = CephRestfulClientAccess {
-            host: Url::parse("http://localhost:8000").unwrap(),
-            username: "admin".to_string(),
-            password: "admin".to_string(),
-        };
-
-        let client = CephRestfulClient::new(access);
-
-        assert_eq!(
-            client.endpoint("/api/auth/login").unwrap(),
-            Url::parse("http://localhost:8000/api/auth/login").unwrap()
-        );
     }
 }
