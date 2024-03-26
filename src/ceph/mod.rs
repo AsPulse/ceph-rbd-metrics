@@ -1,4 +1,6 @@
+mod image;
 mod login;
+mod tracing;
 
 use std::env;
 
@@ -8,10 +10,10 @@ use reqwest::{header, Url};
 use reqwest_middleware::{ClientBuilder, ClientWithMiddleware};
 use reqwest_retry::policies::ExponentialBackoff;
 use reqwest_retry::RetryTransientMiddleware;
-use reqwest_tracing::TracingMiddleware;
 use thiserror::Error;
 
 use crate::ceph::login::CephApiAuthentication;
+use crate::ceph::tracing::TracingMiddleware;
 
 #[derive(Clone)]
 pub struct CephRestfulClientAccess {
@@ -35,7 +37,8 @@ pub enum CephRestfulClientError {
     Reqwest(#[from] reqwest::Error),
 }
 static USER_AGENT: &str = concat!("ceph-rbd-metrics/v", env!("CARGO_PKG_VERSION"));
-static ACCEPT: &str = "application/vnd.ceph.api.v1.0+json";
+static ACCEPT_V1: &str = "application/vnd.ceph.api.v1.0+json";
+static ACCEPT_V2: &str = "application/vnd.ceph.api.v2.0+json";
 
 impl CephRestfulClient {
     pub async fn from_env() -> Self {
@@ -55,7 +58,7 @@ impl CephRestfulClient {
         info!("Host: {}", access.host);
         info!("Username: {}", access.username);
         info!("User-Agent: {}", USER_AGENT);
-        info!("Accept: {}", ACCEPT);
+        info!("Accept: {}", ACCEPT_V2);
 
         CephRestfulClient {
             client: ClientBuilder::new(
@@ -63,7 +66,7 @@ impl CephRestfulClient {
                     .default_headers(
                         [
                             (header::USER_AGENT, HeaderValue::from_static(USER_AGENT)),
-                            (header::ACCEPT, HeaderValue::from_static(ACCEPT)),
+                            (header::ACCEPT, HeaderValue::from_static(ACCEPT_V2)),
                         ]
                         .into_iter()
                         .collect(),
@@ -72,7 +75,7 @@ impl CephRestfulClient {
                     .unwrap(),
             )
             .with(CephApiAuthentication::new(access.clone()).await)
-            .with(TracingMiddleware::default())
+            .with(TracingMiddleware)
             .with(RetryTransientMiddleware::new_with_policy(retry_policy))
             .build(),
             access,

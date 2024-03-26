@@ -176,7 +176,6 @@ dependencies = [
  "reqwest",
  "reqwest-middleware",
  "reqwest-retry",
- "reqwest-tracing",
  "serde",
  "serde_json",
  "task-local-extensions",
@@ -648,12 +647,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "90ed8c1e510134f979dbc4f070f87d4313098b704861a105fe34231c70a3901c"
 
 [[package]]
-name = "matchit"
-version = "0.7.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0e7465ac9959cc2b1404e8e2367b43684a6d13790fe23056cc8c6c5a6b7bcb94"
-
-[[package]]
 name = "memchr"
 version = "2.7.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1051,22 +1044,6 @@ dependencies = [
  "tokio",
  "tracing",
  "wasm-timer",
-]
-
-[[package]]
-name = "reqwest-tracing"
-version = "0.4.8"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "190838e54153d7a7e2ea98851304b3ce92daeabf14c54d32b01b84a3e636f683"
-dependencies = [
- "anyhow",
- "async-trait",
- "getrandom",
- "matchit",
- "reqwest",
- "reqwest-middleware",
- "task-local-extensions",
- "tracing",
 ]
 
 [[package]]

@@ -1,6 +1,5 @@
 use self::ceph::CephRestfulClient;
 use dotenv::dotenv;
-
 mod ceph;
 
 #[tokio::main]

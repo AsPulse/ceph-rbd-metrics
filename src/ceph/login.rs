@@ -6,12 +6,12 @@ use reqwest::{header, Response, StatusCode};
 use reqwest_middleware::{ClientBuilder, Middleware};
 use reqwest_retry::policies::ExponentialBackoff;
 use reqwest_retry::RetryTransientMiddleware;
-use reqwest_tracing::TracingMiddleware;
 use serde::Deserialize;
 use serde_json::json;
 use tokio::sync::Mutex;
 
-use super::{CephRestfulClientAccess, CephRestfulClientError, ACCEPT, USER_AGENT};
+use super::tracing::TracingMiddleware;
+use super::{CephRestfulClientAccess, CephRestfulClientError, ACCEPT_V1, USER_AGENT};
 
 pub struct CephApiAuthentication {
     access: CephRestfulClientAccess,
@@ -35,7 +35,7 @@ impl CephApiAuthentication {
                 .default_headers(
                     [
                         (header::USER_AGENT, HeaderValue::from_static(USER_AGENT)),
-                        (header::ACCEPT, HeaderValue::from_static(ACCEPT)),
+                        (header::ACCEPT, HeaderValue::from_static(ACCEPT_V1)),
                     ]
                     .into_iter()
                     .collect(),
@@ -43,8 +43,8 @@ impl CephApiAuthentication {
                 .build()
                 .unwrap(),
         )
-        .with(TracingMiddleware::default())
         .with(RetryTransientMiddleware::new_with_policy(retry_policy))
+        .with(TracingMiddleware)
         .build();
 
         let body = json!({
