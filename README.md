@@ -28,7 +28,8 @@ Provides per RBD Image metrics such as disk usage, quota size, size of objects, 
    - **`RUST_LOG`**  
        Log level. `INFO` recommended, but `TRACE` is helpful for debugging.
    - **`CEPH_API_ENDPOINT`**  
-       The endpoint url of Ceph RESTful API. Usually, it is as same as dashboard url.
+       The endpoint url of Ceph RESTful API.  
+       Usually, it is as same as dashboard url.
    - **`CEPH_API_USERNAME`**  
        The username which the exporter uses for API authorization.
    - **`CEPH_API_PASSWORD`**  
