@@ -18,7 +18,7 @@ Provides per RBD Image metrics such as disk usage, quota size, size of objects, 
    or
    ```sh
    # currently linux/amd64, linux/arm64 supported
-   docker pull harbor.aspulse.dev/ceph-rbd-metrics/ceph-rbd-metrics:v0.1.0`
+   docker pull harbor.aspulse.dev/ceph-rbd-metrics/ceph-rbd-metrics:v0.2.0
    ```
 
   
