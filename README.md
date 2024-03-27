@@ -24,7 +24,7 @@ Provides per RBD Image metrics such as disk usage, quota size, size of objects, 
   
 2. **Set the environment variables.**
    - **`PORT`**  
-     <code>&nbsp;</code>The port number eported ceph-rbd-metrics at. Default as 3000.
+     <pre>&nbsp;</pre>The port number eported ceph-rbd-metrics at. Default as 3000.
    - **`RUST_LOG`**  
      <code>&nbsp;</code>Log level. `INFO` recommended, but `TRACE` is helpful for debugging.
    - **`CEPH_API_ENDPOINT`**  
