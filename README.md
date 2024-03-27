@@ -24,16 +24,16 @@ Provides per RBD Image metrics such as disk usage, quota size, size of objects, 
   
 2. **Set the environment variables.**
    - **`PORT`**  
-       The port number eported ceph-rbd-metrics at. Default as 3000.
+     | The port number eported ceph-rbd-metrics at. Default as 3000.
    - **`RUST_LOG`**  
-       Log level. `INFO` recommended, but `TRACE` is helpful for debugging.
+     | Log level. `INFO` recommended, but `TRACE` is helpful for debugging.
    - **`CEPH_API_ENDPOINT`**  
-       The endpoint url of Ceph RESTful API.  
-       Usually, it is as same as dashboard url.
+     | The endpoint url of Ceph RESTful API.  
+     | Usually, it is as same as dashboard url.
    - **`CEPH_API_USERNAME`**  
-       The username which the exporter uses for API authorization.
+     | The username which the exporter uses for API authorization.
    - **`CEPH_API_PASSWORD`**  
-       The username which the exporter uses for API authorization.
+     | The password which the exporter uses for API authorization.
   
    For the `CEPH_API_USERNAME` and `CEPH_API_PASSWORD`, The username and password you normally use to log in to the dashboard will work, as long as you have sufficient permissions.  
    You can specify its by not only environment variables, also `.env` file.
