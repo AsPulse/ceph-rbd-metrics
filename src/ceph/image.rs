@@ -26,16 +26,16 @@ pub struct ImagesInPoolInfo {
 
 #[derive(Clone, Debug, Hash, PartialEq, Eq, EncodeLabelSet)]
 pub struct ImageMetadata {
-    pub name: String,
-    pub id: String,
+    pub image_name: String,
+    pub image_id: String,
     pub pool_name: String,
 }
 
 impl From<ImageInfo> for ImageMetadata {
     fn from(info: ImageInfo) -> Self {
         Self {
-            name: info.name,
-            id: info.id,
+            image_name: info.name,
+            image_id: info.id,
             pool_name: info.pool_name,
         }
     }
