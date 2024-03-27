@@ -39,4 +39,4 @@ Provides per RBD Image metrics such as disk usage, quota size, size of objects, 
    For the `CEPH_API_USERNAME` and `CEPH_API_PASSWORD`, The username and password you normally use to log in to the dashboard will work, as long as you have sufficient permissions.  
    You can specify its by not only environment variables, also `.env` file.
 
-3.  
+3. **Run and have fun!**
